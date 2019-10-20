@@ -1,0 +1,141 @@
+import pygame
+import numpy as np
+import sys
+import math
+
+pygame.init()
+SQUARESIZE = 100
+
+ROW_COUNT = 6
+COLUMN_COUNT = 7
+
+RADIUS = int(SQUARESIZE/2) - 5
+
+width = COLUMN_COUNT * SQUARESIZE
+height = (ROW_COUNT + 1) * SQUARESIZE
+
+size = (width, height)
+
+screen = pygame.display.set_mode(size)
+
+
+def create_board():
+    board = np.zeros((6, 7))
+    return board
+
+
+board = create_board()
+print(board)
+
+
+def is_valid_location(board, col):
+    return board[5][col] == 0;
+
+
+def get_next_open_row(board, col):
+    for r in range(ROW_COUNT):
+        if board[r][col] == 0:
+            return r
+
+
+def drop_piece(board, row, col, piece):
+    board[row][col] = piece;
+
+
+def print_board(board):
+    print(np.flip(board, 0))
+
+def draw_board(board):
+    for c in range(COLUMN_COUNT):
+        for r in range(ROW_COUNT):
+            pygame.draw.rect(screen, (0, 0, 255), (c*SQUARESIZE, r*SQUARESIZE + SQUARESIZE, SQUARESIZE, SQUARESIZE))
+            pygame.draw.circle(screen, (0,0,0), (int(c*SQUARESIZE + SQUARESIZE/2), int(r*SQUARESIZE + SQUARESIZE + SQUARESIZE/2)), RADIUS)
+
+    for c in range(COLUMN_COUNT):
+        for r in range(ROW_COUNT):
+            if board[r][c] == 1:
+                pygame.draw.circle(screen, (255, 0, 0), (int(c*SQUARESIZE + SQUARESIZE/2), height - int(r*SQUARESIZE + SQUARESIZE/2)), RADIUS)
+            elif board[r][c] == 2:
+                pygame.draw.circle(screen, (255, 255, 0), (int(c*SQUARESIZE + SQUARESIZE/2), height - int(r*SQUARESIZE + SQUARESIZE/2)), RADIUS)
+    pygame.display.update()
+
+
+def winning_move(board, piece):
+    # check for all the horizontal pieces
+    for row in range(ROW_COUNT):
+        for col in range(COLUMN_COUNT - 3):
+            if board[row][col] == piece and board[row][col + 1] == piece and board[row][col + 2] == piece and board[row][col + 3] == piece:
+                return True
+
+    # check for all the vertical pieces
+    for row in range(ROW_COUNT - 3):
+        for col in range(ROW_COUNT):
+            if board[row][col] == piece and board[row + 1][col] == piece and board[row + 2][col] == piece and board[row + 3][col] == piece:
+                return True
+
+    # check for postively sloped diagonals
+    for row in range(ROW_COUNT - 3):
+        for col in range(COLUMN_COUNT - 3):
+            # print ("row: " + str(row) + " col: " + str(col))
+            if board[row][col] == piece and board[row + 1][col + 1] == piece and board[row + 2][col + 2] == piece and board[row + 3][col + 3] == piece:
+                return True
+
+    # check for negatively sloped diagonals
+    for row in range(3, ROW_COUNT):
+        for col in range(COLUMN_COUNT - 3):
+            # print ("row: " + str(row) + " col: " + str(col))
+            if board[row][col] == piece and board[row - 1][col + 1] == piece and board[row - 2][col + 2] == piece and board[row - 3][col + 3] == piece:
+                return True
+
+
+turn = True
+game_over = False
+
+draw_board(board)
+pygame.display.update()
+
+while not game_over:
+
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT:
+            sys.exit()
+
+        if event.type == pygame.MOUSEMOTION:
+            posx = event.pos[0]
+            pygame.draw.rect(screen, (0, 0, 0), (0, 0, width, SQUARESIZE))
+            if turn == 0:
+                pygame.draw.circle(screen, (255, 255, 0), (posx, int(SQUARESIZE/2)), RADIUS)
+            else:
+                pygame.draw.circle(screen, (255, 0, 0), (posx, int(SQUARESIZE/2)), RADIUS)
+            pygame.display.update()
+
+        if event.type == pygame.MOUSEBUTTONDOWN:
+            posx = event.pos[0]
+            # posy = event.pos[1]
+
+            # row = int(math.floor(posy/100))
+            col = int(math.floor(posx/100))
+
+            if turn:
+                # col = int(input("Player 1 makes selection (0-6)"))
+                if is_valid_location(board, col):
+                    row = get_next_open_row(board, col)
+                    drop_piece(board, row, col, 1)
+
+                    if winning_move(board, 1):
+                        print("Player 1 has won the game")
+                        game_over = True
+
+            else:
+                # col = int(input("Player 2 makes selection (0-6)"))
+
+                if is_valid_location(board, col):
+                    row = get_next_open_row(board, col)
+                    drop_piece(board, row, col, 2)
+
+                    if winning_move(board, 2):
+                        print("Player 2 has won the game")
+                        game_over = True
+            turn = not turn
+            print_board(board)
+            draw_board(board)
